@@ -1,6 +1,6 @@
-
 import gym
 import numpy as np
+from pdb import set_trace
 
 env_wrapper = gym.make('TestEnv-v0')
 alpha = 0.2 # learning rate
@@ -36,6 +36,7 @@ def epsilon_greedy(valid_actions, state, epsilon):
 def qlearning():
 
     obs = env_wrapper.reset()
+
     state = env_wrapper.observation_space[obs[0],obs[1],obs[2],obs[3]]
 
     # the default first engagement: online
