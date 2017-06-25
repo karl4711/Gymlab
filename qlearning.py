@@ -1,15 +1,19 @@
-import gym
 import numpy as np
 from pdb import set_trace
+from test_env import *
 
-env_wrapper = gym.make('TestEnv-v0')
 alpha = 0.2 # learning rate
 gamma = 0.99 # discounting factor
 epsilon = 0.2 # exploration rate
 
 # initialise Q with ones
-Q = np.ones((env_wrapper.action_space.n, env_wrapper.observation_space.size))
+Q = np.ones((len(action_space), observation_space.size))
+
+# load Q with existing dump file
+# Q = np.load('test1.npy')
+
 print("initialise Q with ones: ", Q)
+
 
 def greedy(valid_actions, state):
 
@@ -30,43 +34,28 @@ def epsilon_greedy(valid_actions, state, epsilon):
     return greedy(valid_actions, state)
 
 
+def step(obs, engagement):
+    # choose action with epsilon_greedy
+    # note that there are limit actions to choose according to current engagement
+    state = observation_space[obs[0],obs[1],obs[2],obs[3]]
+    action = epsilon_greedy(get_valid_actions(engagement), state, epsilon)
+    print("would take action:", action)
+    return action
+
+
 # qlearning of one episode
-def qlearning():
+def learn(new_obs, reward, last_obs, last_action, is_new_user = False):
 
-    userid, engagement = env_wrapper.reset()
+    # new user, learn nothing
+    if is_new_user:
+        return
 
-    state = env_wrapper.observation_space[50,50,50,50]
-
-    for t in range(0,100):
+    new_state = observation_space[new_obs[0],new_obs[1],new_obs[2],new_obs[3]]
+    last_state = observation_space[last_obs[0],last_obs[1],last_obs[2],last_obs[3]]
     
-        # choose action with epsilon_greedy
-        # note that there are limit actions to choose according to current engagement
-        action = epsilon_greedy(env_wrapper.env.get_valid_actions(engagement), state, epsilon)
-        print("would take action:", action)
+    # update Q
+    delta = reward + gamma * np.max(Q[:, new_state]) - Q[last_action, last_state]
+    Q[last_action, last_state] += alpha * delta
 
-        # action(numpy.int32) need to transfer to python int to insert into database
-        new_obs, reward, done, info = env_wrapper.step((userid, int(action)))
-
-        # here comes a new engagement after the step
-        engagement = info.get('engagement')
-        last_state_and_action = info.get('last_state_and_action')
-        is_new_user = info.get('is_new_user')
-        userid = info.get('userid')
-
-        # new user, learn nothing
-        if is_new_user:
-            continue
-
-        new_state = env_wrapper.observation_space[new_obs[0],new_obs[1],new_obs[2],new_obs[3]]
-
-        
-        last_state = env_wrapper.observation_space[last_state_and_action[2],\
-            last_state_and_action[3],last_state_and_action[4],last_state_and_action[5]]
-        last_action =  last_state_and_action[6]
-
-        # update Q
-        delta = reward + gamma * np.max(Q[:, new_state]) - Q[last_action, last_state]
-        Q[last_action, last_state] += alpha * delta
-
-        print('update Q[', last_state, ',', env_wrapper.env.Actions(last_action).name,']:',\
-            Q[last_action, last_state])
+    print('update Q[', last_state, ',', Actions(last_action).name,']:',\
+        Q[last_action, last_state])

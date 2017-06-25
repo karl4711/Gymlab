@@ -1,8 +1,15 @@
 import sqlite3
+import qlearning
+from datetime import datetime
+import numpy as np
 
 sqlite_db = 'test.db' 
 
-def clean():
+def dump_q():
+    np.save('test-'+ datetime.now().strftime('%Y-%m-%d-%H-%M-%S') + '.npy', qlearning.Q)
+
+
+def clean_db():
     execute_update("DELETE FROM EVENTS")
     execute_update("DELETE FROM ENGAGEMENTS")
     execute_update("DELETE FROM ONLINE_PARAMS")
