@@ -4,8 +4,7 @@ from flask import Flask
 import test_env
 
 PORT = 4711
-DEBUG = True
-# DEBUG = False
+
 
 app = Flask(__name__)
 

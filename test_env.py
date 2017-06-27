@@ -14,30 +14,40 @@ state_threshold = 100
 action_space = [0,1,2,3,4]
 
 # online_motivation(0-99), ad_acceptance(0-99), mission_skill(0-99), consumption_ability(0-99)
-x = np.array(np.arange(pow(state_threshold,4)))
-observation_space = np.reshape(x,(state_threshold,state_threshold,state_threshold,state_threshold))
+# x = np.array(np.arange(pow(state_threshold,4)))
+# observation_space = np.reshape(x,(state_threshold,state_threshold,state_threshold,state_threshold))
+
+# TODO we only learn the first two dimensions for test (since Q is too large)
+x = np.array(np.arange(pow(state_threshold,2)))
+observation_space = np.reshape(x,(state_threshold,state_threshold))
 
 engagement_list = list(map(lambda x: x.name, Engagements))
 
 def receive_event(userid, event):
+
+    print('got event:',event, 'from:',userid)
+    return save_event(userid, event)
 
     # TODO may save userids in memory 
     if not query_state(userid):
         print("user not exist, initialise here.", userid)
         init_player(userid)
 
-    print('got event:',event, 'from:',userid)
-    return save_event(userid, event)
-
 
 def receive_engagement(userid, engagement):
 
+    print('got engagement:',engagement, 'from:',userid)
+    save_engagement(userid, engagement)
+
+    # first engagement(online), learn nothing
     if not query_state(userid):
         print("user not exist, initialise here.", userid)
         init_player(userid)
-
-    print('got engagement:',engagement, 'from:',userid)
-    save_engagement(userid, engagement)
+        state = query_state(userid)
+        last_state = [state[2],state[3],state[4],state[5]]
+        action = qlearning.step(np.array(last_state), engagement)
+        update_action(userid, action)
+        return Actions(action).name
 
     reward = 0
 
@@ -97,26 +107,27 @@ def receive_engagement(userid, engagement):
 
         new_state[States.online_motivation.value] = int(new_online_time_percent)
 
-    # ------- mission -------
-    elif engagement == Engagements.mission_completed.name:
-        reward += 1
-        new_state[States.mission_skill.value] += 1
-        if new_state[States.mission_skill.value] > state_threshold:
-            new_state[States.mission_skill.value] = state_threshold
+    # TODO we do not concern about these two dimensions for test
+    # # ------- mission -------
+    # elif engagement == Engagements.mission_completed.name:
+    #     reward += 1
+    #     new_state[States.mission_skill.value] += 1
+    #     if new_state[States.mission_skill.value] > state_threshold:
+    #         new_state[States.mission_skill.value] = state_threshold
         
 
-    elif engagement == Engagements.mission_failed.name:
-        reward -= 1
-        new_state[States.mission_skill.value] -= 1
-        if new_state[States.mission_skill.value] < 0:
-            new_state[States.mission_skill.value] = 0
+    # elif engagement == Engagements.mission_failed.name:
+    #     reward -= 1
+    #     new_state[States.mission_skill.value] -= 1
+    #     if new_state[States.mission_skill.value] < 0:
+    #         new_state[States.mission_skill.value] = 0
 
-
-    elif engagement == Engagements.transaction.name:
-        reward += 2
-        new_state[States.consumption_ability.value] += 1 # should consider about online time
-        if new_state[States.consumption_ability.value] > state_threshold:
-            new_state[States.consumption_ability.value] = state_threshold
+    # # ------- transaction -------
+    # elif engagement == Engagements.transaction.name:
+    #     reward += 2
+    #     new_state[States.consumption_ability.value] += 1 # should consider about online time
+    #     if new_state[States.consumption_ability.value] > state_threshold:
+    #         new_state[States.consumption_ability.value] = state_threshold
 
     if reward != 0:
         print('reward:', reward)
