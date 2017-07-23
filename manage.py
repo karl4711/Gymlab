@@ -3,13 +3,16 @@ import qlearning
 from datetime import datetime
 import numpy as np
 import os
+import logging
+
+DEBUG = True
+# DEBUG = False
 
 sqlite_db = 'test.db' 
 
-dump_prefix = 'test-'
+dump_prefix = 'dump-'
 
-# DEBUG = True
-DEBUG = False
+state_threshold = 10
 
 def dump_q():
     np.save(dump_prefix + datetime.now().strftime('%Y-%m-%d-%H-%M-%S') + '.npy', qlearning.Q)
@@ -22,11 +25,13 @@ def load_latest_q():
     print('load latest Q: ', latest_q)
     return np.load(latest_q)
 
-
 def clean_db():
     execute_update("DELETE FROM EVENTS")
     execute_update("DELETE FROM ENGAGEMENTS")
     execute_update("DELETE FROM ONLINE_PARAMS")
+    execute_update("DELETE FROM AD_PARAMS")
+    execute_update("DELETE FROM TRANSACTION_PARAMS")
+    execute_update("DELETE FROM MISSION_PARAMS")
     execute_update("DELETE FROM STATES")
     print("data cleaned.")
 
